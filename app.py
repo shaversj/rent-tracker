@@ -1,7 +1,11 @@
 import datetime
 from config import service_account_key_file, google_sheet_key
 import gspread
+from flask import Flask
 from oauth2client.service_account import ServiceAccountCredentials
+
+
+app = Flask(__name__)
 
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
@@ -25,6 +29,7 @@ def main():
     pass
 
 
+@app.route('/applyPayment/<amount>')
 def apply_payment_amount(amount: float):
     """Apply payment amount to spreadsheet"""
 
@@ -44,6 +49,7 @@ def apply_payment_amount(amount: float):
         return f'The payment of ${amount} was successfully applied to the spreadsheet.'
 
 
+@app.route('/applyRent/<amount>')
 def apply_rent_due_amount(amount: float):
     """Applies the amount of rent due each month."""
 
@@ -63,6 +69,16 @@ def apply_rent_due_amount(amount: float):
         return f'${amount} was added to the balance.'
 
 
+@app.route('/retrieveBalance')
+def retrieve_balance():
+    """Retrieve the total amount due."""
+
+    balance = worksheet.cell(39, 5).value
+    x = datetime.datetime.now()
+
+    return f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}'
+
+
 def find_empty_cell():
     """Find the first empy cell in the date column."""
 
@@ -79,16 +95,11 @@ def find_empty_cell():
             continue
 
 
-def retrieve_balance():
-    """Retrieve the total amount due."""
-
-    balance = worksheet.cell(39, 5).value
-    x = datetime.datetime.now()
-
-    return f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}'
-
-
 # Row is first number and Column is second number
 # print(apply_payment_amount(675))
 # print(apply_rent_due_amount(790))
 # print(retrieve_balance())
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
