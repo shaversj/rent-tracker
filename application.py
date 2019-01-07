@@ -5,7 +5,7 @@ from flask import Flask
 from oauth2client.service_account import ServiceAccountCredentials
 
 
-app = Flask(__name__)
+application = Flask(__name__)
 
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
@@ -19,17 +19,13 @@ wks = gc.open_by_key(google_sheet_key)
 worksheet = wks.worksheet('rent_sheet')
 
 
-def main():
-
-    # TODO setup cron job to run the apply_rent_due_amount function at the beginning of every month
-    # TODO setup Twillio connection
-    # TODO Provide a way to call the apply_payment_amount function with input from the user
-    # TODO Provide a way to call the retrieve_balance function with input from the user
-
-    pass
+# TODO setup cron job to run the apply_rent_due_amount function at the beginning of every month
+# TODO setup Twillio connection
+# TODO Provide a way to call the apply_payment_amount function with input from the user
+# TODO Provide a way to call the retrieve_balance function with input from the user
 
 
-@app.route('/applyPayment/<amount>')
+@application.route('/applyPayment/<amount>')
 def apply_payment_amount(amount: float):
     """Apply payment amount to spreadsheet"""
 
@@ -49,7 +45,7 @@ def apply_payment_amount(amount: float):
         return f'The payment of ${amount} was successfully applied to the spreadsheet.'
 
 
-@app.route('/applyRent/<amount>')
+@application.route('/applyRent/<amount>')
 def apply_rent_due_amount(amount: float):
     """Applies the amount of rent due each month."""
 
@@ -69,7 +65,7 @@ def apply_rent_due_amount(amount: float):
         return f'${amount} was added to the balance.'
 
 
-@app.route('/retrieveBalance')
+@application.route('/retrieveBalance')
 def retrieve_balance():
     """Retrieve the total amount due."""
 
@@ -102,4 +98,4 @@ def find_empty_cell():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    application.run
