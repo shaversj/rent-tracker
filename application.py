@@ -2,10 +2,12 @@ import datetime
 from config import service_account_key_file, google_sheet_key
 import gspread
 from flask import Flask
+from twilio.twiml.messaging_response import MessagingResponse
 from oauth2client.service_account import ServiceAccountCredentials
 
 
 application = Flask(__name__)
+
 
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
@@ -23,6 +25,17 @@ worksheet = wks.worksheet('rent_sheet')
 # TODO setup Twillio connection
 # TODO Provide a way to call the apply_payment_amount function with input from the user
 # TODO Provide a way to call the retrieve_balance function with input from the user
+
+def main():
+    # TODO create main function that can pass to correct function based oon info in request.
+    pass
+
+
+@application.route('/')
+def test_service():
+    response = MessagingResponse()
+    response.message('Hello')
+    return str(response)
 
 
 @application.route('/applyPayment/<amount>')
@@ -42,6 +55,7 @@ def apply_payment_amount(amount: float):
     except gspread.exceptions.GSpreadException:
         return 'Your update was not successful. Please try again.'
     else:
+
         return f'The payment of ${amount} was successfully applied to the spreadsheet.'
 
 
@@ -69,10 +83,14 @@ def apply_rent_due_amount(amount: float):
 def retrieve_balance():
     """Retrieve the total amount due."""
 
+    response = MessagingResponse()
     balance = worksheet.cell(39, 5).value
     x = datetime.datetime.now()
 
-    return f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}'
+    response.message(
+        f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}')
+
+    return str(response)
 
 
 def find_empty_cell():
@@ -98,4 +116,4 @@ def find_empty_cell():
 
 
 if __name__ == "__main__":
-    application.run
+    application.run()
