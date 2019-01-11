@@ -1,7 +1,8 @@
 import datetime
+import re
 from config import service_account_key_file, google_sheet_key
 import gspread
-from flask import Flask
+from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -20,26 +21,50 @@ gc = gspread.authorize(credentials)
 wks = gc.open_by_key(google_sheet_key)
 worksheet = wks.worksheet('rent_sheet')
 
-
-# TODO setup cron job to run the apply_rent_due_amount function at the beginning of every month
-# TODO setup Twillio connection
-# TODO Provide a way to call the apply_payment_amount function with input from the user
-# TODO Provide a way to call the retrieve_balance function with input from the user
-
-def main():
-    # TODO create main function that can pass to correct function based oon info in request.
-    pass
+# TODO Create a monthly cron job that adds the months rent.
 
 
 @application.route('/')
-def test_service():
+def main():
+
+    # Get the message that was sent from Twilio
+    body = request.values.get('Body', None)
+    body = str(body).lower()
+
+    # Extract numbers from body
+    amountRegex = re.compile(r'\d+')
+
+    # Start our TwiML response
     response = MessagingResponse()
-    response.message('Hello')
-    return str(response)
+
+    if 'payment' in body:
+        amount = amountRegex.search(body)
+        amount = float(amount.group(0))
+        answer = apply_payment_amount(amount)
+        response.message(answer)
+
+        return str(response)
+
+    elif 'balance' in body:
+        answer = retrieve_balance()
+        response.message(answer)
+
+        return str(response)
+
+    else:
+        response.message(
+            'Enter "550 Payment" to apply payment.\nEnter "Balance" to retrieve the account balance.')
+
+        return str(response)
+
+
+@application.route('/test')
+def test_service():
+    return 'Hello'
 
 
 @application.route('/applyPayment/<amount>')
-def apply_payment_amount(amount: float):
+def apply_payment_amount(amount: int):
     """Apply payment amount to spreadsheet"""
 
     date_cell, description_cell, payment_received_cell, rent_due_cell = find_empty_cell()
@@ -56,7 +81,7 @@ def apply_payment_amount(amount: float):
         return 'Your update was not successful. Please try again.'
     else:
 
-        return f'The payment of ${amount} was successfully applied to the spreadsheet.'
+        return f'The payment of ${amount:.2f} was successfully applied to the account.'
 
 
 @application.route('/applyRent/<amount>')
@@ -76,21 +101,17 @@ def apply_rent_due_amount(amount: float):
     except gspread.exceptions.GSpreadException:
         return 'Your update was not successful. Please try again.'
     else:
-        return f'${amount} was added to the balance.'
+        return f'${amount:.2f} was added to the balance of the account.'
 
 
 @application.route('/retrieveBalance')
 def retrieve_balance():
     """Retrieve the total amount due."""
 
-    response = MessagingResponse()
     balance = worksheet.cell(39, 5).value
     x = datetime.datetime.now()
 
-    response.message(
-        f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}')
-
-    return str(response)
+    return f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}'
 
 
 def find_empty_cell():
@@ -107,12 +128,6 @@ def find_empty_cell():
 
         else:
             continue
-
-
-# Row is first number and Column is second number
-# print(apply_payment_amount(675))
-# print(apply_rent_due_amount(790))
-# print(retrieve_balance())
 
 
 if __name__ == "__main__":
