@@ -21,8 +21,6 @@ gc = gspread.authorize(credentials)
 wks = gc.open_by_key(google_sheet_key)
 worksheet = wks.worksheet('rent_sheet')
 
-# TODO Create a monthly cron job that adds the months rent.
-
 
 @application.route('/')
 def main():
