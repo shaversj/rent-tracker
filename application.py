@@ -21,8 +21,6 @@ gc = gspread.authorize(credentials)
 wks = gc.open_by_key(google_sheet_key)
 worksheet = wks.worksheet('rent_sheet')
 
-# TODO Create a monthly cron job that adds the months rent.
-
 
 @application.route('/')
 def main():
@@ -45,6 +43,14 @@ def main():
 
         return str(response)
 
+    elif 'add rent' in body:
+        amount = amountRegex.search(body)
+        amount = float(amount.group(0))
+        answer = add_rent_to_balance(amount)
+        response.message(answer)
+
+        return str(response)
+
     elif 'balance' in body:
         answer = retrieve_balance()
         response.message(answer)
@@ -53,19 +59,14 @@ def main():
 
     else:
         response.message(
-            'Enter "550 Payment" to apply payment.\nEnter "Balance" to retrieve the account balance.')
+            'Enter "{amount} payment" to apply payment to account.\nEnter "Balance" to retrieve the account balance.\nEnter "Add rent {amount}" to increase balance of the account.')
 
         return str(response)
 
 
-@application.route('/test')
-def test_service():
-    return 'Hello'
-
-
 @application.route('/applyPayment/<amount>')
 def apply_payment_amount(amount: int):
-    """Apply payment amount to spreadsheet"""
+    """Apply payment"""
 
     date_cell, description_cell, payment_received_cell, rent_due_cell = find_empty_cell()
 
@@ -84,9 +85,9 @@ def apply_payment_amount(amount: int):
         return f'The payment of ${amount:.2f} was successfully applied to the account.'
 
 
-@application.route('/applyRent/<amount>')
-def apply_rent_due_amount(amount: float):
-    """Applies the amount of rent due each month."""
+@application.route('/addRent/<amount>')
+def add_rent_to_balance(amount: float):
+    """Add rent to the balance of the account"""
 
     date_cell, description_cell, payment_received_cell, rent_due_cell = find_empty_cell()
 
