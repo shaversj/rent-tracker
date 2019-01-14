@@ -43,14 +43,6 @@ def main():
 
         return str(response)
 
-    elif 'add rent' in body:
-        amount = amountRegex.search(body)
-        amount = float(amount.group(0))
-        answer = add_rent_to_balance(amount)
-        response.message(answer)
-
-        return str(response)
-
     elif 'balance' in body:
         answer = retrieve_balance()
         response.message(answer)
@@ -59,7 +51,7 @@ def main():
 
     else:
         response.message(
-            'Enter "{amount} payment" to apply payment to account.\nEnter "Balance" to retrieve the account balance.\nEnter "Add rent {amount}" to increase balance of the account.')
+            'Enter "{amount} payment" to apply payment to account.\nEnter "Balance" to retrieve the account balance.')
 
         return str(response)
 
