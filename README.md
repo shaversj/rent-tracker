@@ -13,7 +13,7 @@ If I texted my Twilio number: **I received a $725 payment**
 
 * The service will update the google spreadsheet with the date, description and payment amount. The service also responds to the user stating that the update was sucessfully completed. 
 
-If I texted the Twilio number: **Check balance**
+If I texted my Twilio number: **Check balance**
 
 * The service will respond with the following: **As of 1/1/2019, the account has a balance of $1,450.00**
 
