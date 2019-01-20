@@ -1,33 +1,26 @@
 import datetime
 import re
-from config import service_account_key_file, google_sheet_key
-import gspread
-from flask import Flask, request
+import pygsheets
+from chalice import Chalice, Response
 from twilio.twiml.messaging_response import MessagingResponse
-from oauth2client.service_account import ServiceAccountCredentials
+
+app = Chalice(app_name='pannell-rent-tracker')
+
+gc = pygsheets.authorize(service_account_file='chalicelib/creds.json')
+
+wks = gc.open_by_key('1MhXVVt6zeh7ujOC7imloGN3Kcz4boSwPIL1_VpPLHe8')
+worksheet = wks.worksheet('title', 'rent_sheet')
 
 
-application = Flask(__name__)
-
-
-scope = ['https://spreadsheets.google.com/feeds',
-         'https://www.googleapis.com/auth/drive']
-
-credentials = ServiceAccountCredentials.from_json_keyfile_name(
-    service_account_key_file, scope)
-
-gc = gspread.authorize(credentials)
-
-wks = gc.open_by_key(google_sheet_key)
-worksheet = wks.worksheet('rent_sheet')
-
-
-@application.route('/')
+@app.route('/')
 def main():
 
     # Get the message that was sent from Twilio
-    body = request.values.get('Body', None)
-    body = str(body).lower()
+    request_body = app.current_request.to_dict()
+    print(request_body['query_params']['Body'])
+
+    body_of_request = str(request_body['query_params']['Body'])
+    body = body_of_request.lower()
 
     # Extract numbers from body
     amountRegex = re.compile(r'\d+')
@@ -50,58 +43,56 @@ def main():
         return str(response)
 
     else:
-        response.message(
-            'Enter "{amount} payment" to apply payment to account.\nEnter "Balance" to retrieve the account balance.')
 
-        return str(response)
+        return Response(body='Enter "{amount} payment" to apply payment to account.\nEnter "Balance" to retrieve the account balance.', headers={'Content-Type': "text/plain"})
 
 
-@application.route('/applyPayment/<amount>')
+@app.route('/applyPayment/{amount}')
 def apply_payment_amount(amount: int):
     """Apply payment"""
 
     date_cell, description_cell, payment_received_cell, rent_due_cell = find_empty_cell()
 
     try:
-        worksheet.update_cell(date_cell.row,
-                              date_cell.col, '=TODAY()')
-        worksheet.update_cell(description_cell.row,
-                              description_cell.col, 'Payment Received')
-        worksheet.update_cell(payment_received_cell.row,
-                              payment_received_cell.col, amount)
+        worksheet.update_cell((date_cell.row,
+                               date_cell.col), '=TODAY()')
+        worksheet.update_cell((description_cell.row,
+                               description_cell.col), 'Payment Received')
+        worksheet.update_cell((payment_received_cell.row,
+                               payment_received_cell.col), amount)
 
-    except gspread.exceptions.GSpreadException:
+    except pygsheets.exceptions.PyGsheetsException:
         return 'Your update was not successful. Please try again.'
     else:
 
         return f'The payment of ${amount:.2f} was successfully applied to the account.'
 
 
-@application.route('/addRent/<amount>')
+@app.route('/addRent/{amount}')
 def add_rent_to_balance(amount: float):
     """Add rent to the balance of the account"""
 
     date_cell, description_cell, payment_received_cell, rent_due_cell = find_empty_cell()
 
     try:
-        worksheet.update_cell(date_cell.row,
-                              date_cell.col, '=TODAY()')
-        worksheet.update_cell(description_cell.row,
-                              description_cell.col, 'Rent Due')
-        worksheet.update_cell(rent_due_cell.row,
-                              rent_due_cell.col, amount)
+        worksheet.update_cell((date_cell.row,
+                               date_cell.col), '=TODAY()')
+        worksheet.update_cell((description_cell.row,
+                               description_cell.col), 'Rent Due')
+        worksheet.update_cell((rent_due_cell.row,
+                               rent_due_cell.col), amount)
 
-    except gspread.exceptions.GSpreadException:
+    except pygsheets.exceptions.PyGsheetsException:
         return 'Your update was not successful. Please try again.'
     else:
         return f'${amount:.2f} was added to the balance of the account.'
 
 
-@application.route('/retrieveBalance')
+@app.route('/retrieveBalance')
 def retrieve_balance():
     """Retrieve the total amount due."""
 
-    balance = worksheet.cell(39, 5).value
+    balance = worksheet.cell((39, 5)).value
     x = datetime.datetime.now()
 
     return f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}'
@@ -111,17 +102,13 @@ def find_empty_cell():
     """Find the first empy cell in the date column."""
 
     for x in range(1, 38):
-        if worksheet.cell(x, 1).value == '':
-            date_cell = worksheet.cell(x, 1)
-            description_cell = worksheet.cell(x, 2)
-            payment_received_cell = worksheet.cell(x, 3)
-            rent_due_cell = worksheet.cell(x, 4)
+        if worksheet.cell((x, 1)).value == '':
+            date_cell = worksheet.cell((x, 1))
+            description_cell = worksheet.cell((x, 2))
+            payment_received_cell = worksheet.cell((x, 3))
+            rent_due_cell = worksheet.cell((x, 4))
 
             return date_cell, description_cell, payment_received_cell, rent_due_cell
 
         else:
             continue
-
-
-if __name__ == "__main__":
-    application.run()
