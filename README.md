@@ -12,7 +12,7 @@ The service uses Twilio for SMS integration and Google Sheets to record a paymen
 
 If I text my Twilio number: **I received a $725 payment**
 
-* The rent-tracker service receives the request from Twilio and updates the google spreadsheet with the date, description and payment amount.
+* The rent-tracker service updates the google spreadsheet with the date, description and payment amount.
 
 If I text my Twilio number: **Check balance**
 
