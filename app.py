@@ -44,7 +44,6 @@ def main():
         )
 
 
-@app.route("/applyPayment/{amount}")
 def apply_payment_amount(amount: int):
     """Apply payment"""
 
@@ -82,7 +81,6 @@ def add_rent_to_balance(amount: float):
         return f"${amount:.2f} was added to the balance of the account."
 
 
-@app.route("/retrieveBalance")
 def retrieve_balance():
     """Retrieve the total amount due."""
 
