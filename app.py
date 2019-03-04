@@ -10,6 +10,8 @@ gc = pygsheets.authorize(service_account_file="chalicelib/creds.json")
 
 wks = gc.open_by_key(config.google_sheet_key)
 worksheet = wks.worksheet("title", "rent_sheet")
+x = datetime.datetime.now()
+current_date = x.strftime("%m/%d/%Y")
 
 
 @app.route("/")
@@ -50,7 +52,7 @@ def apply_payment_amount(amount: int):
     date_cell, description_cell, payment_received_cell, rent_due_cell = find_empty_cell()
 
     try:
-        worksheet.update_value((date_cell.row, date_cell.col), "=TODAY()")
+        worksheet.update_value((date_cell.row, date_cell.col), current_date)
         worksheet.update_value(
             (description_cell.row, description_cell.col), "Payment Received"
         )
@@ -71,7 +73,7 @@ def add_rent_to_balance(amount: float):
     date_cell, description_cell, payment_received_cell, rent_due_cell = find_empty_cell()
 
     try:
-        worksheet.update_value((date_cell.row, date_cell.col), "=TODAY()")
+        worksheet.update_value((date_cell.row, date_cell.col), current_date)
         worksheet.update_value((description_cell.row, description_cell.col), "Rent Due")
         worksheet.update_value((rent_due_cell.row, rent_due_cell.col), amount)
 
@@ -85,9 +87,8 @@ def retrieve_balance():
     """Retrieve the total amount due."""
 
     balance = worksheet.cell((39, 5)).value
-    x = datetime.datetime.now()
 
-    return f'As of {x.strftime("%x")}, the account has a balance of ${balance[1:-1]}'
+    return f"As of {current_date}, the account has a balance of ${balance[1:-1]}"
 
 
 def find_empty_cell():
